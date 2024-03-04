@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
+import javax.validation.Valid;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,37 +24,34 @@ public class UserController {
     }
 
     @PostMapping(value = "/users")
-    public User addUser(@RequestBody User user) {
+    public User addUser(@Valid @RequestBody User user) {
+        log.info("Пришел POST запрос /users с телом: {}", user);
         User newUser = checkUser(user);
         newUser.setId(++generatedId);
         users.put(generatedId, newUser);
-        log.debug("User added");
+        log.info("Отправлен ответ POST /users с телом: {}", user);
         return newUser;
     }
 
     @PutMapping(value = "/users")
-    public User updateUser(@RequestBody User user) {
+    public User updateUser(@Valid @RequestBody User user) {
+        log.info("Пришел PUT запрос /users с телом: {}", user);
         if (users.get(user.getId()) == null) {
             throw new ValidationException("User with id=" + user.getId() + " not found");
         }
 
         users.put(user.getId(), user);
-        log.debug("User updated");
+        log.info("Отправлен ответ PUT /users с телом: {}", user);
         return user;
     }
 
     private User checkUser(User user) {
         final LocalDate endTime = LocalDate.now();
-        if (user.getEmail().isBlank() || !user.getEmail().contains("@")) {
-            throw new ValidationException("User email not found");
-        } else if (user.getLogin().isBlank()) {
-            throw new ValidationException("Login is empty");
-        } else if (user.getBirthday().isAfter(endTime)) {
+        if (user.getBirthday().isAfter(endTime)) {
             throw new ValidationException("Birthday in future");
         } else if (user.getName() == null) {
             user.setName(user.getLogin());
         }
-
         return user;
     }
 }

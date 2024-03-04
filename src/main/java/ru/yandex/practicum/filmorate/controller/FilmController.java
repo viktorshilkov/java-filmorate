@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
+import javax.validation.Valid;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,35 +24,31 @@ public class FilmController {
     }
 
     @PostMapping(value = "/films")
-    public Film addFilm(@RequestBody Film film) {
+    public Film addFilm(@Valid @RequestBody Film film) {
+        log.info("Пришел POST запрос /films с телом: {}", film);
         Film newFilm = checkFilm(film);
         newFilm.setId(++generatedId);
         films.put(generatedId, newFilm);
-        log.debug("Film added");
+        log.info("Отправлен ответ POST /films с телом: {}", film);
         return newFilm;
     }
 
     @PutMapping(value = "/films")
-    public Film updateFilm(@RequestBody Film film) {
+    public Film updateFilm(@Valid @RequestBody Film film) {
+        log.info("Пришел PUT запрос /films с телом: {}", film);
         if (films.get(film.getId()) == null) {
             throw new ValidationException("Film with id=" + film.getId() + " not found");
         }
 
         films.put(film.getId(), film);
-        log.debug("Film updated");
+        log.info("Отправлен ответ PUT /films с телом: {}", film);
         return film;
     }
 
     private Film checkFilm(Film film) {
         final LocalDate startDate = LocalDate.of(1895, 12, 27);
-        if (film.getName().isBlank()) {
-            throw new ValidationException("Enter film name");
-        } else if (film.getDescription().length() > 200) {
-            throw new ValidationException("Description must be < 200");
-        } else if (film.getReleaseDate().isBefore(startDate)) {
+        if (film.getReleaseDate().isBefore(startDate)) {
             throw new ValidationException("Date must be after 1895.12.27");
-        } else if (film.getDuration() <= 0) {
-            throw new ValidationException("Duration must be > 0");
         }
         return film;
     }
