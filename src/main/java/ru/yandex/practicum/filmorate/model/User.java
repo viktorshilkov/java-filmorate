@@ -23,7 +23,7 @@ public class User {
         friends.add(id);
     }
 
-    public void deleteFriend(int id){
+    public void deleteFriend(int id) {
         friends.remove(id);
     }
 }
