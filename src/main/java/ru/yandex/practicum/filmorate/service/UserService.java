@@ -3,9 +3,11 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,42 +21,31 @@ public class UserService {
         this.userStorage = userStorage;
     }
 
-    public UserStorage getUserStorage() {
-        return userStorage;
-    }
-
     public User addFriend(int userId, int otherId) {
-        log.info("Пришел POST запрос /users/{id}/friends/{friendId}");
         final User user = userStorage.getUser(userId);
         final User otherUser = userStorage.getUser(otherId);
         user.addFriend(otherId);
         otherUser.addFriend(userId);
-        log.info("Отправлен ответ POST /users/{id}/friends/{friendId} с телом: {}", user);
         return user;
     }
 
     public void deleteFriend(int userId, int friendId) {
-        log.info("Пришел DELETE запрос /users/{id}/friends/{friendId}");
         final User user = userStorage.getUser(userId);
         final User friend = userStorage.getUser(friendId);
         user.deleteFriend(friendId);
         friend.deleteFriend(userId);
-        log.info("Отправлен ответ DELETE /films/{id}/friends/{friendId}");
+        log.info("Пользователь с id=" + friendId + " удалён из друзей");
     }
 
     public List<User> getFriends(int userId) {
-        log.info("Пришел GET запрос /users/{id}/friends");
         List<User> friends = new ArrayList<>();
         for (Integer friendId : userStorage.getUser(userId).getFriends()) {
             friends.add(userStorage.getUser(friendId));
         }
-
-        log.info("Отправлен ответ GET /users/{id}/friends с телом: {}", friends);
         return friends;
     }
 
     public List<User> findMutualFriends(int userId, int otherId) {
-        log.info("Пришел GET запрос /users/{id}/friends/common/{otherId}");
         List<User> mutualFriends = new ArrayList<>();
         final User user = userStorage.getUser(userId);
         final User otherUser = userStorage.getUser(otherId);
@@ -66,8 +57,38 @@ public class UserService {
                 }
             }
         }
-
-        log.info("Отправлен ответ GET /users/{id}/friends/common/{otherId} с телом: {}", mutualFriends);
         return mutualFriends;
+    }
+
+    public List<User> getUsers() {
+        return userStorage.getUsers();
+    }
+
+    public User getUser(int id) {
+        return userStorage.getUser(id);
+    }
+
+    public User addUser(User user) {
+        User newUser = checkUser(user);
+        return userStorage.addUser(newUser);
+    }
+
+    public User updateUser(User user) {
+        User newUser = checkUser(user);
+        return userStorage.updateUser(newUser);
+    }
+
+    public void deleteUser(int userId) {
+        userStorage.deleteUser(userId);
+    }
+
+    private User checkUser(User user) {
+        final LocalDate endTime = LocalDate.now();
+        if (user.getBirthday().isAfter(endTime)) {
+            throw new ValidationException("Birthday in future");
+        } else if (user.getName() == null) {
+            user.setName(user.getLogin());
+        }
+        return user;
     }
 }

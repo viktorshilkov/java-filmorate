@@ -1,16 +1,16 @@
 package ru.yandex.practicum.filmorate.service;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service
 public class FilmService {
     private final FilmStorage filmStorage;
@@ -20,33 +20,51 @@ public class FilmService {
         this.filmStorage = filmStorage;
     }
 
-    public FilmStorage getFilmStorage() {
-        return filmStorage;
-    }
-
     public Film setLike(int filmId, int userId) {
-        log.info("Пришел PUT запрос /films/{filmId}/like/{userId}");
         final Film film = filmStorage.getFilm(filmId);
         film.setLike(userId);
-        log.info("Отправлен ответ PUT /films/{filmId}/like/{userId} с телом: {}", film);
         return film;
     }
 
     public Film deleteLike(int filmId, int userId) {
-        log.info("Пришел DELETE запрос /films/{filmId}/like/{userId}");
         final Film film = filmStorage.getFilm(filmId);
         film.deleteLike(userId);
-        log.info("Отправлен ответ DELETE /films/{filmId}/like/{userId} с телом: {}", film);
         return film;
     }
 
     public List<Film> getPopularFilms(int count) {
-        log.info("Пришел GET запрос /films/popular с телом: {}", count);
-        List<Film> films = filmStorage.getFilms().stream()
+        return filmStorage.getFilms().stream()
                 .sorted(Comparator.comparingInt(film -> ((Film) film).getLikes().size()).reversed())
                 .limit(count).collect(Collectors.toList());
+    }
 
-        log.info("Отправлен ответ GET /films/popular с телом: {}", films);
-        return films;
+    public Film getFilm(int id) {
+        return filmStorage.getFilm(id);
+    }
+
+    public List<Film> getFilms() {
+        return filmStorage.getFilms();
+    }
+
+    public void deleteFilm(int filmId) {
+        filmStorage.deleteFilm(filmId);
+    }
+
+    public Film updateFilm(Film film) {
+        Film newFilm = checkFilm(film);
+        return filmStorage.updateFilm(newFilm);
+    }
+
+    public Film addFilm(Film film) {
+        Film newFilm = checkFilm(film);
+        return filmStorage.addFilm(newFilm);
+    }
+
+    private Film checkFilm(Film film) {
+        final LocalDate startDate = LocalDate.of(1895, 12, 27);
+        if (film.getReleaseDate().isBefore(startDate)) {
+            throw new ValidationException("Date must be after 1895.12.27");
+        }
+        return film;
     }
 }
